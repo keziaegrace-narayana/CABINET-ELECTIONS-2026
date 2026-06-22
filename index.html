@@ -28,7 +28,7 @@
       </div>
       <div class="voting-status-badge" id="votingStatusBadge">
         <span class="status-dot"></span>
-        <span class="status-text">Checking...</span>
+        <span class="status-text">Ready</span>
       </div>
     </div>
   </header>
@@ -67,7 +67,7 @@
     <div class="form-card step-panel active" id="step1">
       <div class="card-header">
         <h2 class="card-title">Student Details</h2>
-        <p class="card-desc">Please enter your name, admission number and branch exactly as registered with the school.</p>
+        <p class="card-desc">Please enter your name and admission number exactly as registered with the school.</p>
       </div>
       <form id="studentForm" novalidate autocomplete="off">
         <div class="form-group">
@@ -79,18 +79,6 @@
           <label class="form-label" for="admissionNo">Admission Number</label>
           <input type="text" id="admissionNo" class="form-control" placeholder="Enter 7 digit admission number" spellcheck="false" inputmode="numeric" maxlength="7" pattern="[0-9]{7}">
           <span class="field-error" id="admNoError"></span>
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="branchSelect">School Branch</label>
-          <div class="select-wrapper">
-            <select id="branchSelect" class="form-control">
-              <option value="">— Select your branch —</option>
-            </select>
-            <span class="select-arrow">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="#5A6382" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </span>
-          </div>
-          <span class="field-error" id="branchError"></span>
         </div>
         <div class="form-actions">
           <button type="submit" class="btn btn-primary" id="proceedBtn">
@@ -188,8 +176,8 @@
     </div>
   </footer>
 
-  <script src="site-config.js"></script>
   <script src="candidates-data.js"></script>
+  <script src="storage.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
