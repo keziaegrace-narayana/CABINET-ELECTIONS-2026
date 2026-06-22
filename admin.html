@@ -69,7 +69,7 @@
         </div>
         <div class="admin-nav-right">
           <span class="last-updated" id="lastUpdatedLabel">
-            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="#8E96B0" stroke-width="1.2"/><path d="M6.5 3.5v3.3l2 1.2" stroke="#8E96B0" stroke-width="1.2" stroke-linecap="round"/></svg>
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="#8E96B0" stroke-width="1.2"/><path d="M6.5 3.5v3.3l2 1.2" stroke="#8E96B0" stroke-width="1.3"/></svg>
             Refreshing...
           </span>
           <button class="btn btn-secondary btn-sm" id="refreshBtn">
@@ -87,102 +87,152 @@
       <!-- Alert Banner -->
       <div id="adminAlert" class="alert hidden" style="margin-bottom:20px;"></div>
 
-      <!-- Page Header -->
-      <div class="admin-page-header">
-        <div>
-          <h1 class="admin-page-title">Election Overview</h1>
-          <p class="admin-page-subtitle">Live results and participation data — Cabinet Elections 2026–2027</p>
-        </div>
-        <div class="admin-controls">
-          <button class="btn btn-secondary btn-sm" id="exportCsvBtn">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3M2 10v1a1 1 0 001 1h8a1 1 0 001-1v-1" stroke="#5A6382" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Export CSV
-          </button>
-          <button class="btn btn-secondary btn-sm" id="lockBtn">Lock Voting</button>
-          <button class="btn btn-secondary btn-sm" id="unlockBtn" style="display:none;">Unlock Voting</button>
-          <button class="btn btn-secondary btn-sm" id="resetBtn" style="color:var(--error); border-color:var(--error);">Reset Election</button>
-        </div>
+      <!-- Tab Navigation -->
+      <div style="display:flex; gap:12px; margin-bottom:24px; border-bottom:1px solid #E0E4F0; padding-bottom:12px;">
+        <button class="btn btn-secondary btn-sm" id="tabResults" style="background:transparent; border:none; color:var(--primary); border-bottom:2px solid var(--primary); border-radius:0;">Results</button>
+        <button class="btn btn-secondary btn-sm" id="tabCandidates" style="background:transparent; border:none; border-bottom:2px solid transparent; border-radius:0;">Manage Candidates</button>
       </div>
 
-      <!-- Election Status Row -->
-      <div class="election-status-row">
-        <span class="election-status-label">Voting Status:</span>
-        <span class="election-status-value" id="electionStatusValue">—</span>
-        <span style="margin-left:auto; font-size:12px; color:var(--subtle);" id="lastVoteTimestamp">—</span>
-      </div>
-
-      <!-- Stats Grid -->
-      <div class="stats-grid">
-        <div class="stat-card stat-accent">
-          <div class="stat-label">Total Votes Cast</div>
-          <div class="stat-value" id="statTotalVotes">—</div>
-          <div class="stat-meta">Across all branches</div>
-        </div>
-        <div class="stat-card stat-navy">
-          <div class="stat-label">Active Branches</div>
-          <div class="stat-value" id="statActiveBranches">—</div>
-          <div class="stat-meta">Branches with 1+ votes</div>
-        </div>
-        <div class="stat-card stat-blue">
-          <div class="stat-label">Leading Branch</div>
-          <div class="stat-value" id="statLeadingBranch" style="font-size:16px; margin-top:4px;">—</div>
-          <div class="stat-meta" id="statLeadingBranchVotes">—</div>
-        </div>
-        <div class="stat-card stat-success">
-          <div class="stat-label">Last Vote</div>
-          <div class="stat-value" style="font-size:15px; margin-top:4px;" id="statLastVote">—</div>
-          <div class="stat-meta">Most recent submission</div>
-        </div>
-      </div>
-
-      <!-- Charts Row -->
-      <div class="two-col">
-        <div class="section-card">
-          <div class="section-card-header">
-            <div>
-              <div class="section-title">Branch Participation</div>
-              <div class="section-subtitle">Total votes by branch</div>
-            </div>
-          </div>
-          <div class="section-card-body">
-            <div class="chart-container-tall">
-              <canvas id="branchChart"></canvas>
-            </div>
-          </div>
-        </div>
-        <div class="section-card">
-          <div class="section-card-header">
-            <div>
-              <div class="section-title">Vote Distribution</div>
-              <div class="section-subtitle">Branch share of total votes</div>
-            </div>
-          </div>
-          <div class="section-card-body">
-            <div class="chart-container-tall">
-              <canvas id="distributionChart"></canvas>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Branch-wise Results Table -->
-      <div class="section-card">
-        <div class="section-card-header">
+      <!-- RESULTS TAB -->
+      <div id="resultsTab">
+        <!-- Page Header -->
+        <div class="admin-page-header">
           <div>
-            <div class="section-title">Branch-wise Results</div>
-            <div class="section-subtitle">Select a branch and position to view candidate rankings</div>
+            <h1 class="admin-page-title">Election Overview</h1>
+            <p class="admin-page-subtitle">Live results and participation data — Cabinet Elections 2026–2027</p>
           </div>
-          <div class="search-filter-bar">
-            <div class="select-wrapper filter-select">
-              <select id="branchResultFilter" class="form-control" style="height:36px; font-size:13px;">
-                <option value="">All Branches</option>
-              </select>
-              <span class="select-arrow" style="right:8px;">
-                <svg width="10" height="6" viewBox="0 0 10 6"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
-              </span>
+          <div class="admin-controls">
+            <button class="btn btn-secondary btn-sm" id="exportCsvBtn">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3M2 10v1a1 1 0 001 1h8a1 1 0 001-1v-1" stroke="#5A6382" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Export CSV
+            </button>
+            <button class="btn btn-secondary btn-sm" id="lockBtn">Lock Voting</button>
+            <button class="btn btn-secondary btn-sm" id="unlockBtn" style="display:none;">Unlock Voting</button>
+            <button class="btn btn-secondary btn-sm" id="resetBtn" style="color:var(--error); border-color:var(--error);">Reset Election</button>
+          </div>
+        </div>
+
+        <!-- Election Status Row -->
+        <div class="election-status-row">
+          <span class="election-status-label">Voting Status:</span>
+          <span class="election-status-value" id="electionStatusValue">—</span>
+          <span style="margin-left:auto; font-size:12px; color:var(--subtle);" id="lastVoteTimestamp">—</span>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+          <div class="stat-card stat-accent">
+            <div class="stat-label">Total Votes Cast</div>
+            <div class="stat-value" id="statTotalVotes">—</div>
+            <div class="stat-meta">Across all branches</div>
+          </div>
+          <div class="stat-card stat-navy">
+            <div class="stat-label">Active Branches</div>
+            <div class="stat-value" id="statActiveBranches">—</div>
+            <div class="stat-meta">Branches with 1+ votes</div>
+          </div>
+          <div class="stat-card stat-blue">
+            <div class="stat-label">Leading Branch</div>
+            <div class="stat-value" id="statLeadingBranch" style="font-size:16px; margin-top:4px;">—</div>
+            <div class="stat-meta" id="statLeadingBranchVotes">—</div>
+          </div>
+          <div class="stat-card stat-success">
+            <div class="stat-label">Last Vote</div>
+            <div class="stat-value" style="font-size:15px; margin-top:4px;" id="statLastVote">—</div>
+            <div class="stat-meta">Most recent submission</div>
+          </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="two-col">
+          <div class="section-card">
+            <div class="section-card-header">
+              <div>
+                <div class="section-title">Branch Participation</div>
+                <div class="section-subtitle">Total votes by branch</div>
+              </div>
             </div>
-            <div class="select-wrapper filter-select">
-              <select id="branchPositionFilter" class="form-control" style="height:36px; font-size:13px;">
+            <div class="section-card-body">
+              <div class="chart-container-tall">
+                <canvas id="branchChart"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="section-card">
+            <div class="section-card-header">
+              <div>
+                <div class="section-title">Vote Distribution</div>
+                <div class="section-subtitle">Branch share of total votes</div>
+              </div>
+            </div>
+            <div class="section-card-body">
+              <div class="chart-container-tall">
+                <canvas id="distributionChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Branch-wise Results Table -->
+        <div class="section-card">
+          <div class="section-card-header">
+            <div>
+              <div class="section-title">Branch-wise Results</div>
+              <div class="section-subtitle">Select a branch and position to view candidate rankings</div>
+            </div>
+            <div class="search-filter-bar">
+              <div class="select-wrapper filter-select">
+                <select id="branchResultFilter" class="form-control" style="height:36px; font-size:13px;">
+                  <option value="">All Branches</option>
+                </select>
+                <span class="select-arrow" style="right:8px;">
+                  <svg width="10" height="6" viewBox="0 0 10 6"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+                </span>
+              </div>
+              <div class="select-wrapper filter-select">
+                <select id="branchPositionFilter" class="form-control" style="height:36px; font-size:13px;">
+                  <option value="">All Positions</option>
+                  <option value="Head Boy">Head Boy</option>
+                  <option value="Head Girl">Head Girl</option>
+                  <option value="Sports Captain">Sports Captain</option>
+                  <option value="Sports Deputy Captain">Sports Deputy Captain</option>
+                  <option value="Cyber Sentinel">Cyber Sentinel</option>
+                  <option value="Deputy Cyber Sentinel">Deputy Cyber Sentinel</option>
+                </select>
+                <span class="select-arrow" style="right:8px;">
+                  <svg width="10" height="6" viewBox="0 0 10 6"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="data-table-wrap">
+            <table class="data-table" id="branchTable">
+              <thead>
+                <tr>
+                  <th>Branch</th>
+                  <th>Position</th>
+                  <th>Rank</th>
+                  <th>Candidate</th>
+                  <th>Votes</th>
+                  <th>Share</th>
+                </tr>
+              </thead>
+              <tbody id="branchTableBody">
+                <tr><td colspan="6"><div class="empty-state"><div class="empty-state-title">No data yet</div></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Position-wise Detailed Results -->
+        <div class="section-card">
+          <div class="section-card-header">
+            <div>
+              <div class="section-title">Position-wise Detailed Results</div>
+              <div class="section-subtitle">All candidates ranked by vote count</div>
+            </div>
+            <div>
+              <select id="positionFilter" class="form-control" style="height:36px; font-size:13px; width:220px;">
                 <option value="">All Positions</option>
                 <option value="Head Boy">Head Boy</option>
                 <option value="Head Girl">Head Girl</option>
@@ -191,110 +241,94 @@
                 <option value="Cyber Sentinel">Cyber Sentinel</option>
                 <option value="Deputy Cyber Sentinel">Deputy Cyber Sentinel</option>
               </select>
+            </div>
+          </div>
+          <div class="data-table-wrap">
+            <table class="data-table" id="positionTable">
+              <thead>
+                <tr>
+                  <th>Position</th>
+                  <th>Candidate</th>
+                  <th>Votes</th>
+                  <th>Share</th>
+                </tr>
+              </thead>
+              <tbody id="positionTableBody">
+                <tr><td colspan="4"><div class="empty-state"><div class="empty-state-title">No data yet</div></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- All Votes Log -->
+        <div class="section-card">
+          <div class="section-card-header">
+            <div>
+              <div class="section-title">All Votes Log</div>
+              <div class="section-subtitle" id="voteLogCount">Complete vote record</div>
+            </div>
+            <div class="search-filter-bar">
+              <div class="search-input-wrap">
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="6.5" cy="6.5" r="4.5" stroke="#8E96B0" stroke-width="1.3"/><path d="M10 10l3 3" stroke="#8E96B0" stroke-width="1.3"/></svg>
+                <input type="text" id="voteSearch" class="form-control" placeholder="Search name or admission no..." style="height:36px; font-size:13px;">
+              </div>
+              <div class="select-wrapper" style="width:180px;">
+                <select id="voteBranchFilter" class="form-control" style="height:36px; font-size:13px; padding-right:32px;">
+                  <option value="">All Branches</option>
+                </select>
+                <span class="select-arrow" style="right:8px;">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="#5A6382" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="data-table-wrap">
+            <table class="data-table" id="votesTable">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Timestamp</th>
+                  <th>Student Name</th>
+                  <th>Admission No.</th>
+                  <th>Branch</th>
+                  <th>Head Boy</th>
+                  <th>Head Girl</th>
+                  <th>Sports Captain</th>
+                  <th>Sports Dep. Cap.</th>
+                  <th>Cyber Sentinel</th>
+                  <th>Dep. Cyber Sent.</th>
+                </tr>
+              </thead>
+              <tbody id="votesTableBody">
+                <tr><td colspan="11"><div class="empty-state"><div class="empty-state-title">No votes yet</div></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- CANDIDATES TAB -->
+      <div id="candidatesTab" style="display:none;">
+        <div class="admin-page-header">
+          <div>
+            <h1 class="admin-page-title">Manage Candidates</h1>
+            <p class="admin-page-subtitle">Add candidates for each cabinet position</p>
+          </div>
+          <div class="admin-controls">
+            <div class="select-wrapper" style="width:220px;">
+              <select id="candidateBranchSelect" class="form-control" style="height:36px; font-size:13px;">
+                <option value="">Select Branch...</option>
+              </select>
               <span class="select-arrow" style="right:8px;">
                 <svg width="10" height="6" viewBox="0 0 10 6"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
               </span>
             </div>
+            <button class="btn btn-primary btn-sm" id="addNewBranchBtn">+ Add New Branch</button>
           </div>
         </div>
-        <div class="data-table-wrap">
-          <table class="data-table" id="branchTable">
-            <thead>
-              <tr>
-                <th>Branch</th>
-                <th>Position</th>
-                <th>Rank</th>
-                <th>Candidate</th>
-                <th>Votes</th>
-                <th>Share</th>
-              </tr>
-            </thead>
-            <tbody id="branchTableBody">
-              <tr><td colspan="6"><div class="empty-state"><div class="empty-state-title">No data yet</div></div></td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
 
-      <!-- Position-wise Detailed Results -->
-      <div class="section-card">
-        <div class="section-card-header">
-          <div>
-            <div class="section-title">Position-wise Detailed Results</div>
-            <div class="section-subtitle">All candidates ranked by vote count</div>
-          </div>
-          <div>
-            <select id="positionFilter" class="form-control" style="height:36px; font-size:13px; width:220px;">
-              <option value="">All Positions</option>
-              <option value="Head Boy">Head Boy</option>
-              <option value="Head Girl">Head Girl</option>
-              <option value="Sports Captain">Sports Captain</option>
-              <option value="Sports Deputy Captain">Sports Deputy Captain</option>
-              <option value="Cyber Sentinel">Cyber Sentinel</option>
-              <option value="Deputy Cyber Sentinel">Deputy Cyber Sentinel</option>
-            </select>
-          </div>
-        </div>
-        <div class="data-table-wrap">
-          <table class="data-table" id="positionTable">
-            <thead>
-              <tr>
-                <th>Position</th>
-                <th>Candidate</th>
-                <th>Votes</th>
-                <th>Share</th>
-              </tr>
-            </thead>
-            <tbody id="positionTableBody">
-              <tr><td colspan="4"><div class="empty-state"><div class="empty-state-title">No data yet</div></div></td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- All Votes Log -->
-      <div class="section-card">
-        <div class="section-card-header">
-          <div>
-            <div class="section-title">All Votes Log</div>
-            <div class="section-subtitle" id="voteLogCount">Complete vote record</div>
-          </div>
-          <div class="search-filter-bar">
-            <div class="search-input-wrap">
-              <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="6.5" cy="6.5" r="4.5" stroke="#8E96B0" stroke-width="1.3"/><path d="M10 10l3 3" stroke="#8E96B0" stroke-width="1.3" stroke-linecap="round"/></svg>
-              <input type="text" id="voteSearch" class="form-control" placeholder="Search name or admission no..." style="height:36px; font-size:13px;">
-            </div>
-            <div class="select-wrapper" style="width:180px;">
-              <select id="voteBranchFilter" class="form-control" style="height:36px; font-size:13px; padding-right:32px;">
-                <option value="">All Branches</option>
-              </select>
-              <span class="select-arrow" style="right:8px;">
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="#5A6382" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </span>
-            </div>
-          </div>
-        </div>
-        <div class="data-table-wrap">
-          <table class="data-table" id="votesTable">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Timestamp</th>
-                <th>Student Name</th>
-                <th>Admission No.</th>
-                <th>Branch</th>
-                <th>Head Boy</th>
-                <th>Head Girl</th>
-                <th>Sports Captain</th>
-                <th>Sports Dep. Cap.</th>
-                <th>Cyber Sentinel</th>
-                <th>Dep. Cyber Sent.</th>
-              </tr>
-            </thead>
-            <tbody id="votesTableBody">
-              <tr><td colspan="11"><div class="empty-state"><div class="empty-state-title">No votes yet</div></div></td></tr>
-            </tbody>
-          </table>
+        <div id="candidatesContainer" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap:24px;">
+          <!-- Position cards will be generated here -->
         </div>
       </div>
 
@@ -317,7 +351,32 @@
     </div>
   </div>
 
-  <script src="site-config.js"></script>
+  <!-- ═══ ADD CANDIDATE MODAL ═════ -->
+  <div class="modal-overlay hidden" id="addCandidateModal">
+    <div class="modal-box">
+      <h2 class="modal-title">Add Candidate</h2>
+      <form id="addCandidateForm" style="margin-top:16px;">
+        <div class="form-group">
+          <label class="form-label">Position</label>
+          <select id="candidatePositionSelect" class="form-control" required>
+            <option value="">Select Position</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Candidate Name</label>
+          <input type="text" id="candidateName" class="form-control" placeholder="Enter candidate name" required>
+          <span class="field-error" id="candidateNameError"></span>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="cancelAddCandidateBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Candidate</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="candidates-data.js"></script>
+  <script src="storage.js"></script>
   <script src="admin.js"></script>
 </body>
 </html>
