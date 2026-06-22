@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cabinet Elections 2026–27 | Narayana Schools</title>
+  <meta name="description" content="Narayana Schools Cabinet Elections 2026–2027. Cast your vote for the school cabinet.">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="voter-page">
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <div class="logo-mark logo-img">
+          <img src="assets/narayana-logo.jpeg" alt="Narayana Techno Schools"
+               onerror="this.parentElement.classList.remove('logo-img');this.style.display='none';this.parentElement.insertAdjacentHTML('beforeend','<span class=logo-mark-text>N</span>')">
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">Narayana Schools</span>
+          <span class="brand-tagline">Cabinet Elections 2026–2027</span>
+        </div>
+      </div>
+      <div class="voting-status-badge" id="votingStatusBadge">
+        <span class="status-dot"></span>
+        <span class="status-text">Checking...</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="voter-main">
+
+    <!-- Hero -->
+    <div class="hero-section">
+      <h1 class="hero-title"><span class="hero-accent">Choose the Leaders</span> Who Will<br><span class="hero-blue">Inspire, Represent and Serve.</span></h1>
+      <p class="hero-sub">Your vote shapes the future of your school community. Cast it wisely.</p>
+    </div>
+
+    <!-- Step Indicator -->
+    <div class="steps-indicator" id="stepsIndicator">
+      <div class="step active" data-step="1">
+        <div class="step-num">1</div>
+        <span class="step-label">Your Details</span>
+      </div>
+      <div class="step-connector"></div>
+      <div class="step" data-step="2">
+        <div class="step-num">2</div>
+        <span class="step-label">Cast Vote</span>
+      </div>
+      <div class="step-connector"></div>
+      <div class="step" data-step="3">
+        <div class="step-num">3</div>
+        <span class="step-label">Review</span>
+      </div>
+    </div>
+
+    <!-- Global Error Banner -->
+    <div id="globalAlert" class="alert hidden" role="alert"></div>
+
+    <!-- STEP 1: Student Details -->
+    <div class="form-card step-panel active" id="step1">
+      <div class="card-header">
+        <h2 class="card-title">Student Details</h2>
+        <p class="card-desc">Please enter your name, admission number and branch exactly as registered with the school.</p>
+      </div>
+      <form id="studentForm" novalidate autocomplete="off">
+        <div class="form-group">
+          <label class="form-label" for="studentName">Full Name</label>
+          <input type="text" id="studentName" class="form-control" placeholder="Enter your full name" spellcheck="false">
+          <span class="field-error" id="nameError"></span>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="admissionNo">Admission Number</label>
+          <input type="text" id="admissionNo" class="form-control" placeholder="Enter 7 digit admission number" spellcheck="false" inputmode="numeric" maxlength="7" pattern="[0-9]{7}">
+          <span class="field-error" id="admNoError"></span>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="branchSelect">School Branch</label>
+          <div class="select-wrapper">
+            <select id="branchSelect" class="form-control">
+              <option value="">— Select your branch —</option>
+            </select>
+            <span class="select-arrow">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="#5A6382" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+          </div>
+          <span class="field-error" id="branchError"></span>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" id="proceedBtn">
+            <span class="btn-text">Proceed to Vote</span>
+            <span class="btn-spinner hidden"></span>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- STEP 2: Cast Vote -->
+    <div class="step-panel" id="step2">
+      <div class="voting-header">
+        <div class="voter-info-strip" id="voterInfoStrip">
+          Voting as: <strong id="voterNameDisplay"></strong> &nbsp;&middot;&nbsp; <strong id="voterBranchDisplay"></strong>
+        </div>
+        <div class="vote-progress">
+          <span class="progress-label">Selected: <strong id="selectedCount">0</strong> of <strong id="totalPositions">6</strong> positions</span>
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" id="progressFill"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="positionsGrid" class="positions-grid"></div>
+
+      <div class="form-actions centered">
+        <button class="btn btn-secondary" id="backToStep1Btn">Back</button>
+        <button class="btn btn-primary" id="reviewBtn" disabled>Review My Votes</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: Review -->
+    <div class="step-panel" id="step3">
+      <div class="form-card" style="max-width:100%;">
+        <div class="card-header">
+          <h2 class="card-title">Review Your Votes</h2>
+          <p class="card-desc">Confirm your selections before submitting. Votes cannot be changed after submission.</p>
+        </div>
+        <div class="review-header-section" id="reviewStudentInfo"></div>
+        <div class="review-grid" id="reviewGrid"></div>
+        <div id="reviewAlert" class="alert hidden"></div>
+        <div class="form-actions">
+          <button class="btn btn-secondary" id="backToStep2Btn">Edit Votes</button>
+          <button class="btn btn-danger" id="submitVoteBtn">
+            <span class="btn-text">Submit Vote</span>
+            <span class="btn-spinner hidden"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 4: Confirmation -->
+    <div class="step-panel success-overlay" id="step4">
+      <div class="confetti-container" id="confettiContainer" aria-hidden="true"></div>
+      <div class="success-card success-card-overlay">
+        <div class="success-icon">
+          <svg width="72" height="72" viewBox="0 0 72 72" fill="none" aria-hidden="true">
+            <circle cx="36" cy="36" r="36" fill="#EAF5EF"/>
+            <path d="M21 36.5l11 11 20-20" stroke="#156D45" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2 class="success-title">Thank You for Making Your Voice Count</h2>
+        <p class="success-desc">Your vote has been successfully recorded.</p>
+        <div class="success-meta" id="successMeta"></div>
+        <button class="btn btn-primary" id="voteAnotherBtn">Return to Start</button>
+      </div>
+    </div>
+
+    <!-- Voting Locked -->
+    <div class="step-panel" id="votingLockedPanel">
+      <div class="locked-card">
+        <div class="locked-icon">
+          <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+            <circle cx="26" cy="26" r="26" fill="#F4F6FB"/>
+            <rect x="13" y="24" width="26" height="18" rx="4" fill="#DDE2EF" stroke="#8E96B0" stroke-width="1.5"/>
+            <path d="M19 24V19a7 7 0 0114 0v5" stroke="#8E96B0" stroke-width="1.5" stroke-linecap="round"/>
+            <circle cx="26" cy="33" r="2.5" fill="#8E96B0"/>
+          </svg>
+        </div>
+        <h2 class="locked-title">Voting is Currently Closed</h2>
+        <p class="locked-desc">The election has been temporarily locked by the administrator. Please contact your branch coordinator or check back shortly.</p>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <span>&copy; 2026 Narayana Techno Schools — Cabinet Elections 2026–2027. All rights reserved.</span>
+      <div style="display:flex; gap:16px; align-items:center;">
+        <a href="results.html" class="footer-admin-link">View Results</a>
+        <a href="admin.html" class="footer-admin-link">Administrator Access</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="site-config.js"></script>
+  <script src="candidates-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

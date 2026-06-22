@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Election Results 2026–27 | Narayana Schools</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body class="results-page">
+
+  <!-- ═══════════════════════════════════
+       LOGIN SCREEN
+  ══════════════════════════════════════ -->
+  <div class="admin-login-wrap" id="loginScreen">
+    <div class="admin-login-card">
+      <div class="login-logo">
+        <div class="logo-mark logo-img">
+          <img src="assets/narayana-logo.jpeg" alt="Narayana Techno Schools"
+               onerror="this.parentElement.classList.remove('logo-img');this.style.display='none';this.parentElement.insertAdjacentHTML('beforeend','<span class=logo-mark-text>N</span>')">
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">Narayana Techno Schools</span>
+          <span class="brand-tagline">Results Portal</span>
+        </div>
+      </div>
+      <h1 class="login-title">Election Results</h1>
+      <p class="login-subtitle">Cabinet Elections 2026–2027. Authorised access only.</p>
+      <form id="loginForm" autocomplete="off" style="margin-top:28px;">
+        <div class="form-group">
+          <label class="form-label" for="resultPassword">Administrator Password</label>
+          <input type="password" id="resultPassword" class="form-control" placeholder="Enter password" autofocus>
+          <span class="field-error" id="loginError"></span>
+        </div>
+        <div class="form-actions" style="margin-top:20px;">
+          <button type="submit" class="btn btn-primary" id="loginBtn" style="width:100%;">
+            <span class="btn-text">View Results</span>
+            <span class="btn-spinner hidden dark"></span>
+          </button>
+        </div>
+      </form>
+      <div style="margin-top:20px; text-align:center;">
+        <a href="index.html" class="footer-admin-link">Return to Voting Portal</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════
+       RESULTS DASHBOARD
+  ══════════════════════════════════════ -->
+  <div class="results-layout hidden" id="resultsDashboard">
+
+    <!-- Topbar -->
+    <header class="admin-topbar">
+      <div class="admin-topbar-inner">
+        <div class="brand">
+          <div class="logo-mark logo-img">
+            <img src="assets/narayana-logo.jpeg" alt="N"
+                 onerror="this.parentElement.classList.remove('logo-img');this.style.display='none';this.parentElement.insertAdjacentHTML('beforeend','<span class=logo-mark-text>N</span>')">
+          </div>
+          <div class="brand-text">
+            <span class="brand-name">Narayana Schools</span>
+            <span class="brand-tagline">Cabinet Elections 2026–2027 — Results</span>
+          </div>
+        </div>
+        <div class="admin-nav-right">
+          <span class="last-updated" id="lastUpdatedLabel">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="#8E96B0" stroke-width="1.2"/><path d="M6.5 3.5v3.3l2 1.2" stroke="#8E96B0" stroke-width="1.2" stroke-linecap="round"/></svg>
+            Refreshing...
+          </span>
+          <button class="btn btn-secondary btn-sm" id="refreshBtn">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M12 7A5 5 0 112 7" stroke="#5A6382" stroke-width="1.4" stroke-linecap="round"/><path d="M12 3.5V7h-3.5" stroke="#5A6382" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Refresh
+          </button>
+          <a href="admin.html" class="btn btn-secondary btn-sm">Admin Dashboard</a>
+          <button class="btn btn-secondary btn-sm" id="logoutBtn">Sign Out</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="results-main">
+
+      <!-- Alert Banner -->
+      <div id="resultsAlert" class="alert hidden" style="margin-bottom:20px;"></div>
+
+      <!-- Announcement Banner -->
+      <div class="results-announcement-banner">
+        <div class="results-banner-inner">
+          <div>
+            <h1 class="results-banner-title">Cabinet Election Results</h1>
+            <p class="results-banner-subtitle">2026–2027</p>
+          </div>
+          <div class="results-status-badge" id="resultsStatusBadge">
+            <span class="status-dot"></span>
+            <span id="resultsStatusText">Loading...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="stats-grid" style="margin-bottom:28px;">
+        <div class="stat-card stat-accent">
+          <div class="stat-label">Total Votes Cast</div>
+          <div class="stat-value" id="rStatTotal">—</div>
+          <div class="stat-meta">Across all branches</div>
+        </div>
+        <div class="stat-card stat-navy">
+          <div class="stat-label">Branches Participated</div>
+          <div class="stat-value" id="rStatBranches">—</div>
+          <div class="stat-meta">With 1 or more votes</div>
+        </div>
+        <div class="stat-card stat-blue">
+          <div class="stat-label">Positions Contested</div>
+          <div class="stat-value">6</div>
+          <div class="stat-meta">Cabinet positions</div>
+        </div>
+        <div class="stat-card stat-success">
+          <div class="stat-label">Last Vote</div>
+          <div class="stat-value" style="font-size:15px; margin-top:4px;" id="rStatLastVote">—</div>
+          <div class="stat-meta">Most recent submission</div>
+        </div>
+      </div>
+
+      <!-- Winners Showcase -->
+      <div class="results-winners-section">
+        <div class="results-winners-section-header" style="display:flex; justify-content:space-between; gap:16px; align-items:flex-start; flex-wrap:wrap;">
+          <div>
+            <div class="section-title" style="font-size:16px;">Winning Candidates</div>
+            <div class="section-subtitle">View the leading candidate for each position by selected branch or all branches</div>
+          </div>
+          <div style="display:flex; gap:12px; align-items:flex-end;">
+            <div class="select-wrapper" style="width:260px;">
+              <label class="form-label" for="branchFilter" style="margin-bottom:8px; color: #4A5568; font-size:12px;">Branch</label>
+              <select id="branchFilter" class="form-control" style="height:40px; font-size:14px; width:100%;">
+                <option value="">All Branches</option>
+              </select>
+              <span class="select-arrow" style="right:14px;">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="#5A6382" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="results-winners-showcase" id="resultsWinnersShowcase">
+          <div class="empty-state" style="grid-column:1/-1; padding:48px 24px;">
+            <div class="empty-state-title">Loading results...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="two-col">
+        <div class="section-card">
+          <div class="section-card-header">
+            <div>
+              <div class="section-title">Branch Participation</div>
+              <div class="section-subtitle">Top branches by vote count</div>
+            </div>
+          </div>
+          <div class="section-card-body">
+            <div class="chart-container-tall">
+              <canvas id="branchChart"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="section-card">
+          <div class="section-card-header">
+            <div>
+              <div class="section-title">Vote Distribution</div>
+              <div class="section-subtitle">Branch share of total votes</div>
+            </div>
+          </div>
+          <div class="section-card-body">
+            <div class="chart-container-tall">
+              <canvas id="distChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="site-config.js"></script>
+  <script src="results.js"></script>
+</body>
+</html>
