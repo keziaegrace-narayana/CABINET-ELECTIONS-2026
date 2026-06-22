@@ -1,13 +1,11 @@
 /* ============================================================
-   admin.js — Narayana Techno Schools Cabinet Elections 2026–27
-   Administrator Dashboard
+   admin.js — Narayana Schools Cabinet Elections 2026–27
+   Administrator Dashboard (localStorage-based)
    ============================================================ */
 
 // ── CONFIGURATION ─────────────────────────────────────────────
-// Set the deployed Google Apps Script Web App URL in site-config.js.
 const ADMIN_CONFIG = {
-  SCRIPT_URL: (window.ELECTION_SITE_CONFIG && window.ELECTION_SITE_CONFIG.SCRIPT_URL) || 'https://script.google.com/macros/s/YOUR_SCRIPT_ID_HERE/exec',
-  REFRESH_INTERVAL_MS: 30000,   // Auto-refresh every 30 seconds
+  REFRESH_INTERVAL_MS: 10000,   // Auto-refresh every 10 seconds
   POSITIONS: [
     'Head Boy',
     'Head Girl',
@@ -28,6 +26,7 @@ const adminState = {
   branchChart:     null,
   distChart:       null,
   filteredVotes:   [],
+  currentBranch:   '',
 };
 
 // ── CHART THEME ────────────────────────────────────────────────
@@ -55,6 +54,40 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('positionFilter').addEventListener('change', renderPositionTable);
   document.getElementById('voteSearch').addEventListener('input', renderVotesTable);
   document.getElementById('voteBranchFilter').addEventListener('change', renderVotesTable);
+  
+  // Add branch selector and backup buttons
+  const adminControls = document.querySelector('.admin-controls');
+  if (adminControls) {
+    adminControls.insertAdjacentHTML('beforeend', `
+      <div style="display:flex; gap:8px; align-items:center;">
+        <div class="select-wrapper" style="width:200px;">
+          <select id="adminBranchSelect" class="form-control" style="height:36px; font-size:13px;">
+            <option value="">Select Branch for Voting...</option>
+          </select>
+          <span class="select-arrow" style="right:8px;">
+            <svg width="10" height="6" viewBox="0 0 10 6"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+          </span>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="backupBtn" title="Backup votes to file">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3M2 10v1a1 1 0 001 1h8a1 1 0 001-1v-1" stroke="#5A6382" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Backup
+        </button>
+        <button class="btn btn-secondary btn-sm" id="restoreBtn" title="Restore votes from file">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 6v4a1 1 0 001 1h8a1 1 0 001-1V6M7 10V2M4 5l3-3 3 3" stroke="#5A6382" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Restore
+        </button>
+      </div>
+    `);
+    
+    document.getElementById('backupBtn').addEventListener('click', backupData);
+    document.getElementById('restoreBtn').addEventListener('click', () => document.getElementById('restoreFileInput').click());
+  }
+  
+  // Hidden file input for restore
+  if (!document.getElementById('restoreFileInput')) {
+    document.body.insertAdjacentHTML('beforeend', '<input type="file" id="restoreFileInput" accept=".json" style="display:none;">');
+    document.getElementById('restoreFileInput').addEventListener('change', handleRestoreFile);
+  }
 });
 
 // ── AUTH ───────────────────────────────────────────────────────
@@ -65,43 +98,33 @@ async function handleLogin(e) {
   const btn     = document.getElementById('loginBtn');
 
   if (!pwd) { errEl.textContent = 'Password is required.'; return; }
+  if (pwd !== 'Narayana@Admin2026') {
+    errEl.textContent = 'Incorrect password.';
+    return;
+  }
+
   errEl.textContent = '';
   setButtonLoading(btn, true);
 
   try {
-    const url  = `${ADMIN_CONFIG.SCRIPT_URL}?action=getStats&pwd=${encodeURIComponent(pwd)}`;
-    const res  = await fetch(url);
-    const data = await res.json();
-
-    if (!data.success) {
-      errEl.textContent = data.error === 'Unauthorized.' ? 'Incorrect password.' : (data.error || 'Login failed.');
-      return;
-    }
-
     adminState.adminPassword = pwd;
-    adminState.stats         = data;
-    adminState.isLocked      = data.locked;
-
+    
+    // Load data from localStorage
+    const votes = StorageService.getVotes();
+    const settings = StorageService.getSettings();
+    
+    adminState.allVotes  = votes;
+    adminState.isLocked  = settings.locked || false;
+    
     document.getElementById('loginScreen').style.display   = 'none';
     document.getElementById('adminDashboard').classList.add('visible');
 
-    processAndRender(data);
+    populateBranchSelector();
+    processAndRender();
     startAutoRefresh();
 
   } catch (err) {
-    // Demo mode — allow access if script not configured
-    if (ADMIN_CONFIG.SCRIPT_URL.includes('YOUR_SCRIPT_ID_HERE') && pwd === 'admin') {
-      adminState.adminPassword = pwd;
-      adminState.stats         = { totalVotes: 0, branchStats: {}, positionResults: {}, locked: false, lastVote: null };
-      adminState.allVotes      = [];
-      document.getElementById('loginScreen').style.display   = 'none';
-      document.getElementById('adminDashboard').classList.add('visible');
-      renderDashboard();
-      showAdminAlert('warning', 'Demo mode: Google Sheets not connected. Use password "admin" and configure SCRIPT_URL in admin.js to enable live data.');
-      startAutoRefresh();
-    } else {
-      errEl.textContent = `Connection error: ${err.message}`;
-    }
+    errEl.textContent = `Error: ${err.message}`;
   } finally {
     setButtonLoading(btn, false);
   }
@@ -118,48 +141,85 @@ function handleLogout() {
   destroyCharts();
 }
 
+// ── BRANCH SELECTOR ────────────────────────────────────────────
+function populateBranchSelector() {
+  const selector = document.getElementById('adminBranchSelect');
+  if (!selector) return;
+  
+  const branches = [...new Set(adminState.allVotes.map(v => v.branch || ''))].filter(Boolean).sort();
+  
+  selector.innerHTML = '<option value="">Select Branch for Voting...</option>' +
+    branches.map(b => `<option value="${escHtml(b)}">${escHtml(b)}</option>`).join('');
+  
+  selector.addEventListener('change', (e) => {
+    adminState.currentBranch = e.target.value;
+    const settings = StorageService.getSettings();
+    settings.currentBranch = adminState.currentBranch;
+    StorageService.setSettings(settings);
+    showAdminAlert('success', `Branch set to: ${adminState.currentBranch || 'None'}`);
+    setTimeout(hideAdminAlert, 2000);
+  });
+}
+
 // ── LOAD DASHBOARD ─────────────────────────────────────────────
-async function loadDashboard() {
-  if (!adminState.adminPassword) return;
-
+function loadDashboard() {
   try {
-    const [statsRes, resultsRes] = await Promise.all([
-      fetch(`${ADMIN_CONFIG.SCRIPT_URL}?action=getStats&pwd=${encodeURIComponent(adminState.adminPassword)}`),
-      fetch(`${ADMIN_CONFIG.SCRIPT_URL}?action=getResults&pwd=${encodeURIComponent(adminState.adminPassword)}`),
-    ]);
-
-    const stats   = await statsRes.json();
-    const results = await resultsRes.json();
-
-    if (!stats.success)   throw new Error(stats.error   || 'Failed to load stats.');
-    if (!results.success) throw new Error(results.error || 'Failed to load results.');
-
-    adminState.stats    = stats;
-    adminState.allVotes = results.votes || [];
-    adminState.isLocked = stats.locked;
-
-    processAndRender(stats);
+    const votes = StorageService.getVotes();
+    const settings = StorageService.getSettings();
+    
+    adminState.allVotes  = votes;
+    adminState.isLocked  = settings.locked || false;
+    
+    processAndRender();
 
     // Update last-refreshed timestamp
     document.getElementById('lastUpdatedLabel').innerHTML = `
-      <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="#8E96B0" stroke-width="1.2"/><path d="M6.5 3.5v3.3l2 1.2" stroke="#8E96B0" stroke-width="1.2" stroke-linecap="round"/></svg>
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="#8E96B0" stroke-width="1.2"/><path d="M6.5 3.5v3.3l2 1.2" stroke="#8E96B0" stroke-width="1.3"/></svg>
       Updated ${new Date().toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' })}
     `;
     hideAdminAlert();
 
   } catch (err) {
-    if (ADMIN_CONFIG.SCRIPT_URL.includes('YOUR_SCRIPT_ID_HERE')) {
-      renderDashboard(); // demo mode, render empty
-    } else {
-      showAdminAlert('error', `Refresh failed: ${err.message}`);
-    }
+    showAdminAlert('error', `Refresh failed: ${err.message}`);
   }
 }
 
-function processAndRender(stats) {
-  adminState.stats    = stats;
-  adminState.isLocked = stats.locked;
+function processAndRender() {
+  computeStats();
   renderDashboard();
+}
+
+// ── COMPUTE STATS ──────────────────────────────────────────────
+function computeStats() {
+  const votes = adminState.allVotes;
+  const positionResults = {};
+  const branchStats = {};
+
+  // Initialize positions
+  ADMIN_CONFIG.POSITIONS.forEach(pos => {
+    positionResults[pos] = {};
+  });
+
+  // Count votes
+  votes.forEach(vote => {
+    const branch = vote.branch || '';
+    branchStats[branch] = (branchStats[branch] || 0) + 1;
+
+    ADMIN_CONFIG.POSITIONS.forEach(pos => {
+      const candidate = vote.votes && vote.votes[pos];
+      if (candidate) {
+        positionResults[pos][candidate] = (positionResults[pos][candidate] || 0) + 1;
+      }
+    });
+  });
+
+  adminState.stats = {
+    totalVotes: votes.length,
+    branchStats,
+    positionResults,
+    locked: adminState.isLocked,
+    lastVote: votes.length > 0 ? votes[votes.length - 1].timestamp : null,
+  };
 }
 
 // ── RENDER DASHBOARD ───────────────────────────────────────────
@@ -208,33 +268,6 @@ function renderStatCards() {
     document.getElementById('statLastVote').textContent = '—';
     document.getElementById('lastVoteTimestamp').textContent = 'No votes recorded yet';
   }
-}
-
-function renderWinnersGrid() {
-  const stats = adminState.stats;
-  const grid  = document.getElementById('winnersGrid');
-  if (!stats || !stats.positionResults) {
-    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;padding:24px 0;"><div class="empty-state-title">No votes recorded yet</div></div>`;
-    return;
-  }
-
-  const html = ADMIN_CONFIG.POSITIONS.map(pos => {
-    const candidates = stats.positionResults[pos] || {};
-    let leader = '—', topVotes = 0;
-    Object.entries(candidates).forEach(([name, count]) => {
-      if (count > topVotes) { topVotes = count; leader = name; }
-    });
-
-    return `
-      <div class="winner-card ${topVotes > 0 ? 'leading' : ''}">
-        <span class="winner-position">${pos}</span>
-        <span class="winner-name">${escHtml(leader)}</span>
-        <span class="winner-votes">${topVotes > 0 ? `<strong>${topVotes}</strong> votes` : 'No votes yet'}</span>
-      </div>
-    `;
-  }).join('');
-
-  grid.innerHTML = html;
 }
 
 // ── CHARTS ─────────────────────────────────────────────────────
@@ -338,7 +371,7 @@ function destroyChart(canvasId) {
 
 function destroyCharts() {
   destroyChart('branchChart');
-  destroyChart('distributionChart');
+  destroyChart('distChart');
 }
 
 // ── TABLES ─────────────────────────────────────────────────────
@@ -358,12 +391,12 @@ function renderBranchTable() {
   const positions = positionFilter ? [positionFilter] : ADMIN_CONFIG.POSITIONS;
 
   branchNames.forEach(branch => {
-    const branchVotes = votes.filter(v => (v['Branch'] || v['branch'] || '') === branch);
+    const branchVotes = votes.filter(v => (v.branch || '') === branch);
 
     positions.forEach(position => {
       const counts = {};
       branchVotes.forEach(v => {
-        const candidate = v[position] || '';
+        const candidate = v.votes && v.votes[position];
         if (candidate) counts[candidate] = (counts[candidate] || 0) + 1;
       });
 
@@ -464,7 +497,7 @@ function populateBranchResultFilter() {
 }
 
 function getBranchNames(votes) {
-  return [...new Set((votes || []).map(v => v['Branch'] || v['branch'] || '').filter(Boolean))].sort();
+  return [...new Set((votes || []).map(v => v.branch || '').filter(Boolean))].sort();
 }
 
 function populateBranchFilter() {
@@ -496,13 +529,13 @@ function renderVotesTable() {
   // Apply filters
   if (q) {
     votes = votes.filter(v => {
-      const name  = (v['Student Name'] || v['name'] || '').toLowerCase();
-      const admno = (v['Admission Number'] || v['admissionNo'] || '').toLowerCase();
+      const name  = (v.name || '').toLowerCase();
+      const admno = (v.admissionNo || '').toLowerCase();
       return name.includes(q) || admno.includes(q);
     });
   }
   if (branchFilt) {
-    votes = votes.filter(v => (v['Branch'] || v['branch'] || '') === branchFilt);
+    votes = votes.filter(v => (v.branch || '') === branchFilt);
   }
 
   adminState.filteredVotes = votes;
@@ -512,39 +545,36 @@ function renderVotesTable() {
   const display = [...votes].reverse();
 
   tbody.innerHTML = display.slice(0, 500).map((v, i) => {
-    const ts    = v['Timestamp'] ? new Date(v['Timestamp']).toLocaleString('en-IN', { dateStyle:'short', timeStyle:'short' }) : '—';
+    const ts    = v.timestamp ? new Date(v.timestamp).toLocaleString('en-IN', { dateStyle:'short', timeStyle:'short' }) : '—';
     return `
       <tr>
         <td>${display.length - i}</td>
         <td style="white-space:nowrap; font-size:11.5px; color:var(--subtle);">${ts}</td>
-        <td>${escHtml(v['Student Name'] || '—')}</td>
-        <td><code style="font-size:12px;">${escHtml(v['Admission Number'] || '—')}</code></td>
-        <td><span class="badge badge-navy">${escHtml(v['Branch'] || '—')}</span></td>
-        <td style="font-size:12px;">${escHtml(v['Head Boy'] || '—')}</td>
-        <td style="font-size:12px;">${escHtml(v['Head Girl'] || '—')}</td>
-        <td style="font-size:12px;">${escHtml(v['Sports Captain'] || '—')}</td>
-        <td style="font-size:12px;">${escHtml(v['Sports Deputy Captain'] || '—')}</td>
-        <td style="font-size:12px;">${escHtml(v['Cyber Sentinel'] || '—')}</td>
-        <td style="font-size:12px;">${escHtml(v['Deputy Cyber Sentinel'] || '—')}</td>
+        <td>${escHtml(v.name || '—')}</td>
+        <td><code style="font-size:12px;">${escHtml(v.admissionNo || '—')}</code></td>
+        <td><span class="badge badge-navy">${escHtml(v.branch || '—')}</span></td>
+        <td style="font-size:12px;">${escHtml((v.votes && v.votes['Head Boy']) || '—')}</td>
+        <td style="font-size:12px;">${escHtml((v.votes && v.votes['Head Girl']) || '—')}</td>
+        <td style="font-size:12px;">${escHtml((v.votes && v.votes['Sports Captain']) || '—')}</td>
+        <td style="font-size:12px;">${escHtml((v.votes && v.votes['Sports Deputy Captain']) || '—')}</td>
+        <td style="font-size:12px;">${escHtml((v.votes && v.votes['Cyber Sentinel']) || '—')}</td>
+        <td style="font-size:12px;">${escHtml((v.votes && v.votes['Deputy Cyber Sentinel']) || '—')}</td>
       </tr>
     `;
   }).join('');
 }
 
 // ── LOCK / UNLOCK ──────────────────────────────────────────────
-async function handleLockToggle(lock) {
-  const action = lock ? 'lock' : 'unlock';
+function handleLockToggle(lock) {
   const label  = lock ? 'lock' : 'unlock';
 
   if (!confirm(`Are you sure you want to ${label} voting?`)) return;
 
   try {
-    const url  = `${ADMIN_CONFIG.SCRIPT_URL}?action=${action}&pwd=${encodeURIComponent(adminState.adminPassword)}`;
-    const res  = await fetch(url);
-    const data = await res.json();
-
-    if (!data.success) throw new Error(data.error);
-
+    const settings = StorageService.getSettings();
+    settings.locked = lock;
+    StorageService.setSettings(settings);
+    
     adminState.isLocked = lock;
     updateLockButtons();
     updateElectionStatus();
@@ -573,20 +603,17 @@ function updateElectionStatus() {
 }
 
 // ── RESET ──────────────────────────────────────────────────────
-async function handleResetElection() {
+function handleResetElection() {
   const btn      = document.getElementById('confirmResetBtn');
   const alertEl  = document.getElementById('resetModalAlert');
   setButtonLoading(btn, true);
 
   try {
-    const url  = `${ADMIN_CONFIG.SCRIPT_URL}?action=reset&pwd=${encodeURIComponent(adminState.adminPassword)}`;
-    const res  = await fetch(url);
-    const data = await res.json();
-
-    if (!data.success) throw new Error(data.error);
-
+    StorageService.resetVotes();
+    StorageService.resetVotedStudents();
+    
     adminState.allVotes = [];
-    adminState.stats    = { totalVotes: 0, branchStats: {}, positionResults: {}, locked: adminState.isLocked, lastVote: null };
+    computeStats();
     hideModal('resetModal');
     renderDashboard();
     showAdminAlert('success', 'Election has been reset. All votes have been deleted.');
@@ -616,10 +643,18 @@ function exportCSV() {
 
   const csvRows = [headers.join(',')];
   votes.forEach(v => {
-    const row = headers.map(h => {
-      const val = v[h] || '';
-      return `"${String(val).replace(/"/g, '""')}"`;
-    });
+    const row = [
+      v.timestamp || '',
+      v.name || '',
+      v.admissionNo || '',
+      v.branch || '',
+      (v.votes && v.votes['Head Boy']) || '',
+      (v.votes && v.votes['Head Girl']) || '',
+      (v.votes && v.votes['Sports Captain']) || '',
+      (v.votes && v.votes['Sports Deputy Captain']) || '',
+      (v.votes && v.votes['Cyber Sentinel']) || '',
+      (v.votes && v.votes['Deputy Cyber Sentinel']) || '',
+    ].map(val => `"${String(val).replace(/"/g, '""')}"`);
     csvRows.push(row.join(','));
   });
 
@@ -627,12 +662,65 @@ function exportCSV() {
   const blob     = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url      = URL.createObjectURL(blob);
   const link     = document.createElement('a');
-  const filename = `NTS_Elections_2026-27_${new Date().toISOString().slice(0,10)}.csv`;
+  const filename = `NTS_Elections_Votes_${new Date().toISOString().slice(0,10)}.csv`;
 
   link.href     = url;
   link.download = filename;
   link.click();
   URL.revokeObjectURL(url);
+  
+  showAdminAlert('success', 'Votes exported successfully!');
+  setTimeout(hideAdminAlert, 2000);
+}
+
+// ── BACKUP / RESTORE ──────────────────────────────────────────
+function backupData() {
+  const data = StorageService.exportData();
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  const filename = `NTS_Elections_Backup_${new Date().toISOString().slice(0,10)}.json`;
+
+  link.href     = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+  
+  showAdminAlert('success', 'Data backed up successfully!');
+  setTimeout(hideAdminAlert, 2000);
+}
+
+function handleRestoreFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    try {
+      const data = JSON.parse(event.target.result);
+      if (!data.votes || !Array.isArray(data.votes)) {
+        throw new Error('Invalid backup file format.');
+      }
+
+      if (!confirm('This will overwrite all current data. Continue?')) return;
+
+      StorageService.importData(data);
+      adminState.allVotes = data.votes || [];
+      computeStats();
+      renderDashboard();
+      
+      showAdminAlert('success', 'Data restored successfully!');
+      setTimeout(hideAdminAlert, 3000);
+
+    } catch (err) {
+      showAdminAlert('error', `Restore failed: ${err.message}`);
+    }
+  };
+  reader.readAsText(file);
+  
+  // Reset file input
+  e.target.value = '';
 }
 
 // ── AUTO-REFRESH ───────────────────────────────────────────────
@@ -655,7 +743,6 @@ function showModal(id) {
 function hideModal(id) {
   const el = document.getElementById(id);
   if (el) el.classList.add('hidden');
-  // Reset alert inside modal
   const alertEl = document.getElementById('resetModalAlert');
   if (alertEl) alertEl.className = 'alert hidden';
 }
